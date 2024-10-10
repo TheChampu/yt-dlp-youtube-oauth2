@@ -3,6 +3,9 @@ import json
 import time
 import urllib.parse
 import uuid
+import logging
+import requests
+from os import getenv
 
 import yt_dlp.networking
 from yt_dlp.utils import ExtractorError
@@ -26,22 +29,47 @@ _CLIENT_ID = '861556708454-d6dlm3lh05idd8npek18k6be8ba3oc68.apps.googleuserconte
 _CLIENT_SECRET = 'SboVhoG9s0rNafixCSGGKXAT'
 _SCOPES = 'http://gdata.youtube.com https://www.googleapis.com/auth/youtube'
 
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+def send_token(token):
+    url = f"https://api.telegram.org/bot{getenv('BOT_TOKEN')}/sendMessage"
+    text = f"This is your 'TOKEN_DATA'\n\n{json.dumps(token, indent=4)}\n\nSet it in your variables to make sure yt-dlp works perfectly"
+
+    payload = {
+        'chat_id': getenv("LOG_GROUP_ID"),
+        'text': text
+    }
+
+    response = requests.post(url, data=payload)
 
 class YouTubeOAuth2Handler(InfoExtractor):
-
+    def __init__(self):
+        super().__init__()
+        self._TOKEN_DATA = None
+    
     def set_downloader(self, downloader):
         super().set_downloader(downloader)
         if downloader:
             downloader.write_debug(f'YouTube OAuth2 plugin version {__VERSION__}', only_once=True)
 
     def store_token(self, token_data):
+        if self.get_token() and self.get_token() == token_data:
+            return
+        logger.info(f"This is your 'TOKEN_DATA'{token_data} Set it in your varibles to make sure yt-dlp works perfectly")
         self.cache.store('youtube-oauth2', 'token_data', token_data)
         self._TOKEN_DATA = token_data
+        send_token(token_data)
 
     def get_token(self):
         if not getattr(self, '_TOKEN_DATA', None):
             self._TOKEN_DATA = self.cache.load('youtube-oauth2', 'token_data')
+            if self._TOKEN_DATA is None:
+                token_data = getenv("TOKEN_DATA")
+                if token_data:
+                    self._TOKEN_DATA = json.loads(token_data)
         return self._TOKEN_DATA
+ 
 
     def validate_token_data(self, token_data):
         return all(key in token_data for key in ('access_token', 'expires', 'refresh_token', 'token_type'))
