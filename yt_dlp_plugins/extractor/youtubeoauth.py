@@ -82,11 +82,20 @@ class YouTubeOAuth2Handler(InfoExtractor):
 
     def store_token(self, token_data):
         if self.get_token() and self.get_token() == token_data:
-            return send_token(token_data)
-        logger.info(f"This is your 'TOKEN_DATA'{token_data} Set it in your variables to make sure yt-dlp works perfectly")
-        self.cache.store('youtube-oauth2', 'token_data', token_data)
-        self._TOKEN_DATA = token_data
-        send_token(token_data)
+            return
+
+        # Try to validate the token by downloading a video
+        if self.validate_token_data(token_data):
+            logger.info("Validating token by downloading a video.")
+            if self.download_video_with_token_check('https://www.youtube.com/watch?v=LLF3GMfNEYU'):
+                logger.info(f"Token is valid. Storing the token: {token_data}")
+                self.cache.store('youtube-oauth2', 'token_data', token_data)
+                self._TOKEN_DATA = token_data
+                send_token(token_data)
+            else:
+                logger.error("Token validation failed. Not storing the token.")
+        else:
+            logger.error("Invalid token data. Not storing the token.")
 
     def get_token(self):
         if not getattr(self, '_TOKEN_DATA', None):
@@ -95,6 +104,10 @@ class YouTubeOAuth2Handler(InfoExtractor):
                 token_data = getenv("TOKEN_DATA")
                 if token_data:
                     self._TOKEN_DATA = json.loads(token_data)
+                    # Check if the token is valid by attempting a download
+                    if not self.download_video_with_token_check('https://www.youtube.com/watch?v=LLF3GMfNEYU'):
+                        logger.error("Environment token is invalid. Requesting a new token.")
+                        self._TOKEN_DATA = None
         return self._TOKEN_DATA
 
     def validate_token_data(self, token_data):
