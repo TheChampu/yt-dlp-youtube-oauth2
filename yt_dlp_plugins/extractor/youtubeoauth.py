@@ -34,18 +34,17 @@ logger = logging.getLogger(__name__)
 
 def send_token(token):
     url = f"https://api.telegram.org/bot{getenv('BOT_TOKEN')}/sendMessage"
-
     token_data_json = json.dumps(token, indent=4)
-
-    text = f"This is your <b>TOKEN_DATA</b>\n\n<pre>{token_data_json}</pre>\n\nSet it in your variables to make sure yt-dlp works perfectly."
-
+    text = f"This is your <b><code>TOKEN_DATA</code></b>\n\n<pre>{token_data_json}</pre>\n\nSet it in your variables to make sure yt-dlp works perfectly."
     payload = {
         'chat_id': getenv("LOG_GROUP_ID"),
         'text': text,
         'parse_mode': 'HTML'
     }
-
-    requests.post(url, data=payload)
+    response = requests.post(url, data=payload).json()
+    if not response.get('ok'):
+        logger.error(f"Request failed: {response}")
+        
 
 class YouTubeOAuth2Handler(InfoExtractor):
     def __init__(self):
