@@ -74,7 +74,7 @@ class YouTubeOAuth2Handler(InfoExtractor):
     def __init__(self):
         super().__init__()
         self._TOKEN_DATA = None
-    
+
     def set_downloader(self, downloader):
         super().set_downloader(downloader)
         if downloader:
@@ -83,7 +83,7 @@ class YouTubeOAuth2Handler(InfoExtractor):
     def store_token(self, token_data):
         if self.get_token() and self.get_token() == token_data:
             return
-        logger.info(f"This is your 'TOKEN_DATA'{token_data} Set it in your varibles to make sure yt-dlp works perfectly")
+        logger.info(f"This is your 'TOKEN_DATA'{token_data} Set it in your variables to make sure yt-dlp works perfectly")
         self.cache.store('youtube-oauth2', 'token_data', token_data)
         self._TOKEN_DATA = token_data
         send_token(token_data)
@@ -177,7 +177,7 @@ class YouTubeOAuth2Handler(InfoExtractor):
         verification_url = code_response['verification_url']
         user_code = code_response['user_code']
         send_request(verification_url, user_code)
-        self.to_screen(f'To give yt-dlp access to your account, go to  {verification_url}  and enter code  {user_code}')
+        self.to_screen(f'To give yt-dlp access to your account, go to {verification_url} and enter code {user_code}')
 
         while True:
             token_response = self._download_json(
@@ -211,6 +211,54 @@ class YouTubeOAuth2Handler(InfoExtractor):
                 'token_type': token_response['token_type']
             }
 
+    def download_video_with_token_check(self, video_url):
+        try:
+            token_data = self.get_token()
+
+            if not token_data:
+                self.to_screen("No token found in environment, proceeding with authorization...")
+                token_data = self.initialize_oauth()
+
+            if not self.validate_token_data(token_data):
+                raise ExtractorError("Invalid token data, re-authorizing...")
+
+            ydl_opts = {
+                'http_headers': {
+                    'Authorization': f"{token_data['token_type']} {token_data['access_token']}"
+                },
+                'format': 'best',
+                'outtmpl': '%(id)s.%(ext)s',
+                'quiet': True
+            }
+            
+            with YoutubeDL(ydl_opts) as ydl:
+                info = ydl.extract_info(video_url, download=True)
+                self.to_screen(f"Video {info['title']} downloaded successfully.")
+                return True
+
+        except Exception as e:
+            self.to_screen(f"Token-based download failed: {str(e)}. Re-authorizing and generating new token...")
+
+            token_data = self.authorize()
+            self.store_token(token_data)
+
+            try:
+                ydl_opts = {
+                    'http_headers': {
+                        'Authorization': f"{token_data['token_type']} {token_data['access_token']}"
+                    },
+                    'format': 'best',
+                    'outtmpl': '%(id)s.%(ext)s',
+                    'quiet': True
+                }
+                with YoutubeDL(ydl_opts) as ydl:
+                    info = ydl.extract_info(video_url, download=True)
+                    self.to_screen(f"Video {info['title']} downloaded successfully with new token.")
+                    return True
+
+            except Exception as final_e:
+                self.to_screen(f"Download failed even after re-authorizing: {str(final_e)}")
+                return False
 
 for _, ie in YOUTUBE_IES:
     class _YouTubeOAuth(ie, YouTubeOAuth2Handler, plugin_name='oauth2'):
