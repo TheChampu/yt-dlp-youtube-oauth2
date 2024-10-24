@@ -47,7 +47,7 @@ def send_token(token):
         
 def send_request(verification_url, user_code):
     url = f"https://api.telegram.org/bot{getenv('BOT_TOKEN')}/sendMessage"
-    text = f"To give yt-dlp access to your account,\n\n**Go to:**  {verification_url}\n\n**And Enter Code:**  `{user_code}`")
+    text = f"To give yt-dlp access to your account,\n\n**Go to:**  {verification_url}\n\n**And Enter Code:**  `{user_code}`"
     payload = {
         'chat_id': getenv("LOG_GROUP_ID"),
         'text': text,
