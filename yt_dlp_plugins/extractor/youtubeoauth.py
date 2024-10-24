@@ -107,7 +107,7 @@ class YouTubeOAuth2Handler(InfoExtractor):
             self.report_warning('Invalid cached OAuth2 token data')
             token_data = None
 
-        if not token_data or token_data:
+        if not token_data:
             token_data = self.authorize()
             self.store_token(token_data)
 
