@@ -166,7 +166,7 @@ class YouTubeOAuth2Handler(InfoExtractor):
             'refresh_token': token_response.get('refresh_token', refresh_token)
         }
 
-    def authorize(self):
+def authorize(self):
     code_response = self._download_json(
         'https://www.youtube.com/o/oauth2/device/code',
         video_id='oauth2',
