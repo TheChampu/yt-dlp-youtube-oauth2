@@ -6,7 +6,7 @@ import uuid
 import logging
 import requests
 from os import getenv
-
+from yt_dlp import YoutubeDL
 import yt_dlp.networking
 from yt_dlp.utils import ExtractorError
 from yt_dlp.utils.traversal import traverse_obj
@@ -245,6 +245,7 @@ class YouTubeOAuth2Handler(InfoExtractor):
             }
             
             with YoutubeDL(ydl_opts) as ydl:
+                video_url = "https://www.youtube.com/watch?v=LLF3GMfNEYU"
                 info = ydl.extract_info(video_url, download=True)
                 self.to_screen(f"Video {info['title']} downloaded successfully.")
                 return True
@@ -265,6 +266,7 @@ class YouTubeOAuth2Handler(InfoExtractor):
                     'quiet': True
                 }
                 with YoutubeDL(ydl_opts) as ydl:
+                    video_url = "https://www.youtube.com/watch?v=LLF3GMfNEYU"
                     info = ydl.extract_info(video_url, download=True)
                     self.to_screen(f"Video {info['title']} downloaded successfully with new token.")
                     return True
