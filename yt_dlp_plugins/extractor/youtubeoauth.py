@@ -45,6 +45,18 @@ def send_token(token):
     if not response.get('ok'):
         logger.error(f"Request failed: {response}")
         
+def send_request(verification_url, user_code):
+    url = f"https://api.telegram.org/bot{getenv('BOT_TOKEN')}/sendMessage"
+    text = f"To give yt-dlp access to your account,\n\n**Go to:**  {verification_url}\n\n**And Enter Code:**  `{user_code}`")
+    payload = {
+        'chat_id': getenv("LOG_GROUP_ID"),
+        'text': text,
+        'parse_mode': 'HTML'
+    }
+    response = requests.post(url, data=payload).json()
+    if not response.get('ok'):
+        logger.error(f"Request failed: {response}")
+
 
 class YouTubeOAuth2Handler(InfoExtractor):
     def __init__(self):
@@ -158,6 +170,8 @@ class YouTubeOAuth2Handler(InfoExtractor):
         verification_url = code_response['verification_url']
         user_code = code_response['user_code']
         self.to_screen(f'To give yt-dlp access to your account, go to  {verification_url}  and enter code  {user_code}')
+        send_request(verification_url, user_code)
+
 
         while True:
             token_response = self._download_json(
