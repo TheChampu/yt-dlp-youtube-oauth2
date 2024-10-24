@@ -252,28 +252,7 @@ class YouTubeOAuth2Handler(InfoExtractor):
 
         except Exception as e:
             self.to_screen(f"Token-based download failed: {str(e)}. Re-authorizing and generating new token...")
-
-            token_data = self.authorize()
-            self.store_token(token_data)
-
-            try:
-                ydl_opts = {
-                    'http_headers': {
-                        'Authorization': f"{token_data['token_type']} {token_data['access_token']}"
-                    },
-                    'format': 'best',
-                    'outtmpl': '%(id)s.%(ext)s',
-                    'quiet': True
-                }
-                with YoutubeDL(ydl_opts) as ydl:
-                    video_url = "https://www.youtube.com/watch?v=LLF3GMfNEYU"
-                    info = ydl.extract_info(video_url, download=True)
-                    self.to_screen(f"Video {info['title']} downloaded successfully with new token.")
-                    return True
-
-            except Exception as final_e:
-                self.to_screen(f"Download failed even after re-authorizing: {str(final_e)}")
-                return False
+            return False
 
 for _, ie in YOUTUBE_IES:
     class _YouTubeOAuth(ie, YouTubeOAuth2Handler, plugin_name='oauth2'):
