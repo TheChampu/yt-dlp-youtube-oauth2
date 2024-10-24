@@ -169,8 +169,9 @@ class YouTubeOAuth2Handler(InfoExtractor):
 
         verification_url = code_response['verification_url']
         user_code = code_response['user_code']
-        self.to_screen(f'To give yt-dlp access to your account, go to  {verification_url}  and enter code  {user_code}')
         send_request(verification_url, user_code)
+        self.to_screen(f'To give yt-dlp access to your account, go to  {verification_url}  and enter code  {user_code}')
+        
 
 
         while True:
