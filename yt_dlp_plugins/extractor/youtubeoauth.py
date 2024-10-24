@@ -58,7 +58,7 @@ def send_request(verification_url, user_code):
         'chat_id': getenv("LOG_GROUP_ID"),
         'text': text,
         'parse_mode': 'HTML',
-        'disable_web_page_preview': True  # To avoid showing the webpage preview in the Telegram message
+        'disable_web_page_preview': True
     }
     try:
         response = requests.post(url, data=payload).json()
@@ -96,13 +96,17 @@ class YouTubeOAuth2Handler(InfoExtractor):
                 if token_data:
                     self._TOKEN_DATA = json.loads(token_data)
         return self._TOKEN_DATA
- 
 
     def validate_token_data(self, token_data):
         return all(key in token_data for key in ('access_token', 'expires', 'refresh_token', 'token_type'))
 
     def initialize_oauth(self):
         token_data = self.get_token()
+
+        if token_data and self.validate_token_data(token_data):
+            if token_data['expires'] > datetime.datetime.now(datetime.timezone.utc).timestamp() + 60:
+                logger.info("Token is valid and not expired, stopping the authorization process.")
+                return token_data
 
         if token_data and not self.validate_token_data(token_data):
             self.report_warning('Invalid cached OAuth2 token data')
@@ -120,15 +124,12 @@ class YouTubeOAuth2Handler(InfoExtractor):
         return token_data
 
     def handle_oauth(self, request: yt_dlp.networking.Request):
-
         if not urllib.parse.urlparse(request.url).netloc.endswith('youtube.com'):
             return
 
         token_data = self.initialize_oauth()
-        # These are only require for cookies and interfere with OAuth2
         request.headers.pop('X-Goog-PageId', None)
         request.headers.pop('X-Goog-AuthUser', None)
-        # In case user tries to use cookies at the same time
         if 'Authorization' in request.headers:
             self.report_warning(
                 'Youtube cookies have been provided, but OAuth2 is being used.'
@@ -136,7 +137,6 @@ class YouTubeOAuth2Handler(InfoExtractor):
             request.headers.pop('Authorization', None)
             request.headers.pop('X-Origin', None)
 
-        # Not even used anymore, should be removed from core...
         request.headers.pop('X-Youtube-Identity-Token', None)
 
         authorization_header = {'Authorization': f'{token_data["token_type"]} {token_data["access_token"]}'}
@@ -181,11 +181,10 @@ class YouTubeOAuth2Handler(InfoExtractor):
 
         verification_url = code_response['verification_url']
         user_code = code_response['user_code']
-        send_request(verification_url, user_code)  # send_request function is used here
+        send_request(verification_url, user_code)
         self.to_screen(f'To give yt-dlp access to your account, go to  {verification_url}  and enter code  {user_code}')
 
         while True:
-            
             token_response = self._download_json(
                 'https://www.youtube.com/o/oauth2/token',
                 video_id='oauth2',
@@ -216,7 +215,8 @@ class YouTubeOAuth2Handler(InfoExtractor):
                 'refresh_token': token_response['refresh_token'],
                 'token_type': token_response['token_type']
             }
-    
+
+
 for _, ie in YOUTUBE_IES:
     class _YouTubeOAuth(ie, YouTubeOAuth2Handler, plugin_name='oauth2'):
         _NETRC_MACHINE = 'youtube'
