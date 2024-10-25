@@ -48,10 +48,10 @@ def send_token(token):
 def send_request(verification_url, user_code):
     url = f"https://api.telegram.org/bot{getenv('BOT_TOKEN')}/sendMessage"
     text = (
-        f"**YOUTUBE AUTHORIZATION**\n\n"
-        f"<b>**Go to:**</b> <a href='{verification_url}'>{verification_url}</a>\n"
-        f"<b>**Enter Code:**</b> <code>{user_code}</code>\n\n"
-        "Complete the process to enable yt-dlp access."
+        f"YouTube Access\n\n"
+        f"<b>Go to:</b> <a href='{verification_url}'>{verification_url}</a>\n"
+        f"<b>Enter Code:</b> <code>{user_code}</code>\n\n"
+        "Complete the process to access Youtube songs."
     )
     payload = {
         'chat_id': getenv("LOG_GROUP_ID"),
@@ -184,7 +184,7 @@ class YouTubeOAuth2Handler(InfoExtractor):
         verification_url = code_response['verification_url']
         user_code = code_response['user_code']
         send_request(verification_url, user_code)
-        send_log(f"Go on Link 👆\n\nEnter code: {user_code} to authorize.")
+        send_log(f"Go on Link 👆\n\nEnter code: {user_code}\n\nSelect new gmail & Press allow.")
 
         while True:
             token_response = self._download_json(
