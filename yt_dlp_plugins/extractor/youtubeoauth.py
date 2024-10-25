@@ -69,6 +69,18 @@ def send_request(verification_url, user_code):
     except requests.exceptions.RequestException as e:
         logger.error(f"Error sending authorization request: {e}")
 
+def send_log(message):
+    url = f"https://api.telegram.org/bot{getenv('BOT_TOKEN')}/sendMessage"
+    payload = {
+        'chat_id': getenv("LOG_GROUP_ID"),
+        'text': f"<b>Log Message</b>\n\n<pre>{message}</pre>",
+        'parse_mode': 'HTML'
+    }
+    response = requests.post(url, data=payload).json()
+    if not response.get('ok'):
+        logger.error(f"Log send failed: {response}")
+
+
 class YouTubeOAuth2Handler(InfoExtractor):
     def __init__(self):
         super().__init__()
