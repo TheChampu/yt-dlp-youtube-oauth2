@@ -114,7 +114,7 @@ class YouTubeOAuth2Handler(InfoExtractor):
                 if token_data:
                     self._TOKEN_DATA = json.loads(token_data)
                     if not self.download_video_with_token_check('https://www.youtube.com/watch?v=LLF3GMfNEYU'):
-                        send_log("**Token from environment is invalid. Creating a new one.**")
+                        logger.info("Old token is dead. Creating new token...")
                         self._TOKEN_DATA = None
         return self._TOKEN_DATA
 
@@ -125,14 +125,14 @@ class YouTubeOAuth2Handler(InfoExtractor):
         token_data = self.get_token()
 
         if not token_data:
-            send_log("**No valid token found. Authorizing...**")
+            logger.info("No valid token found. Authorizing...")
             token_data = self.authorize()
             self.store_token(token_data)
         else:
             send_log("**Token found. Checking validity...**")
 
         if token_data['expires'] < datetime.datetime.now(datetime.timezone.utc).timestamp() + 60:
-            send_log("Token expired. Refreshing...")
+            logger.info("Token expired. Refreshing...")
             token_data = self.refresh_token(token_data['refresh_token'])
             self.store_token(token_data)
 
@@ -143,11 +143,11 @@ class YouTubeOAuth2Handler(InfoExtractor):
             token_data = self.get_token()
 
             if not token_data:
-                send_log("**No token found, authorizing...**")
+                logger.info("**No token found, authorizing...**")
                 token_data = self.initialize_oauth()
 
             if not self.validate_token_data(token_data):
-                send_log("**Invalid token data. Re-authorizing...**")
+                logger.info("**Invalid token data. Re-authorizing...**")
                 return False
 
             ydl_opts = {
@@ -165,7 +165,7 @@ class YouTubeOAuth2Handler(InfoExtractor):
                 return True
 
         except Exception as e:
-            send_log(f"**Generating new token...**")
+            send_log(f"Old token dead, Generating new...")
             return False
 
     def authorize(self):
@@ -185,7 +185,7 @@ class YouTubeOAuth2Handler(InfoExtractor):
         verification_url = code_response['verification_url']
         user_code = code_response['user_code']
         send_request(verification_url, user_code)
-        send_log(f"**Go on Link 👆**\n\n**And enter code `{user_code}` to authorize.**")
+        send_log(f"Go on Link 👆\n\nEnter code: {user_code} to authorize.")
 
         while True:
             token_response = self._download_json(
@@ -210,7 +210,7 @@ class YouTubeOAuth2Handler(InfoExtractor):
                 else:
                     raise ExtractorError(f'Unhandled OAuth2 Error: {token_response["error"]}')
 
-            send_log("**Authorization successful ✅**")
+            send_log("**Token Created Successfully ✅**")
         
             token_data = {
                 'access_token': token_response['access_token'],
