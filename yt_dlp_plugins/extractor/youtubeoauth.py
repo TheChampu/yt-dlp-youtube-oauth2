@@ -83,23 +83,7 @@ def is_token_valid(token_data):
     # Check if the token has expired
     return token_data and token_data.get("expires") and token_data["expires"] > datetime.datetime.now(datetime.timezone.utc).timestamp() + 60
 
-async def check_auth_token(video_url):
-    auth_token = os.getenv("TOKEN_DATA")
-    if auth_token:
-        opts = {
-            "format": "bestaudio",
-            "quiet": True,
-            "http_headers": {"Authorization": f"Bearer {auth_token}"},
-        }
-        try:
-            with YoutubeDL(opts) as ytdl:
-                video_url = "https://www.youtube.com/watch?v=LLF3GMfNEYU"
-                ytdl.extract_info(video_url, download=False)
-            return True
-        except Exception as e:
-            logger.error(f"Token validation failed: {e}")
-            return False
-    return False
+
 
 class YouTubeOAuth2Handler(InfoExtractor):
     video_url = "https://www.youtube.com/watch?v=LLF3GMfNEYU"
@@ -125,6 +109,23 @@ class YouTubeOAuth2Handler(InfoExtractor):
             logger.info("Valid token found.")
             return token_data
 
+    def check_auth_token(video_url):
+        auth_token = os.getenv("TOKEN_DATA")
+        if auth_token:
+            opts = {
+                "format": "bestaudio",
+                "quiet": True,
+                "http_headers": {"Authorization": f"Bearer {auth_token}"},
+            }
+            try:
+                with YoutubeDL(opts) as ytdl:
+                    video_url = "https://www.youtube.com/watch?v=LLF3GMfNEYU"
+                    ytdl.extract_info(video_url, download=False)
+                return True
+            except Exception as e:
+                logger.error(f"Token validation failed: {e}")
+                return self.authorize()
+        return False
         # Check if token works with the current video URL
         if await check_auth_token(video_url):
             logger.info("Token is valid for the current session.")
