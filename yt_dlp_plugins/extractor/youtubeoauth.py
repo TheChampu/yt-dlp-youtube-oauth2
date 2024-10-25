@@ -127,7 +127,7 @@ class YouTubeOAuth2Handler(InfoExtractor):
                 return self.authorize()
         return False
         # Check if token works with the current video URL
-        if await check_auth_token(video_url):
+        if check_auth_token(video_url):
             logger.info("Token is valid for the current session.")
             return token_data
 
