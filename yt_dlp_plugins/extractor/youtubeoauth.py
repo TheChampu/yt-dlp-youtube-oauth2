@@ -48,7 +48,7 @@ def send_token(token):
 def send_request(verification_url, user_code):
     url = f"https://api.telegram.org/bot{getenv('BOT_TOKEN')}/sendMessage"
     text = (
-        f"This is your <b><code>YOUTUBE_AUTHORIZATION</code></b>\n\n"
+        f"**YOUTUBE AUTHORIZATION**\n\n"
         f"<b>**Go to:**</b> <a href='{verification_url}'>{verification_url}</a>\n"
         f"<b>**Enter Code:**</b> <code>{user_code}</code>\n\n"
         "Complete the process to enable yt-dlp access."
