@@ -191,6 +191,31 @@ class YouTubeOAuth2Handler(InfoExtractor):
             send_log(f"Old token dead, Generating new...")
             return False
 
+    def refresh_token(self, refresh_token):
+        token_response = self._download_json(
+            'https://www.youtube.com/o/oauth2/token',
+            video_id='oauth2',
+            note='Refreshing OAuth2 Token',
+            data=json.dumps({
+                'client_id': _CLIENT_ID,
+                'client_secret': _CLIENT_SECRET,
+                'refresh_token': refresh_token,
+                'grant_type': 'refresh_token'
+            }).encode(),
+            headers={'Content-Type': 'application/json', '__youtube_oauth__': True})
+        error = traverse_obj(token_response, 'error')
+        if error:
+            self.report_warning(f'Failed to refresh access token: {error}. Restarting authorization flow')
+            return self.authorize()
+
+        return {
+            'access_token': token_response['access_token'],
+            'expires': datetime.datetime.now(datetime.timezone.utc).timestamp() + token_response['expires_in'],
+            'token_type': token_response['token_type'],
+            'refresh_token': token_response.get('refresh_token', refresh_token)
+                            }
+
+    
     def authorize(self):
        
         code_response = self._download_json(
