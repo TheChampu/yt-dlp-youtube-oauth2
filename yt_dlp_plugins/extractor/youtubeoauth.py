@@ -93,18 +93,18 @@ class YouTubeOAuth2Handler(InfoExtractor):
 
     def store_token(self, token_data):
         if self.get_token() == token_data:
-            send_log(f"Old token is valid: {token_data}")
+            send_log(f"**Old token is valid:** {token_data}")
             return
         
         if self.validate_token_data(token_data):
             if self.download_video_with_token_check('https://www.youtube.com/watch?v=LLF3GMfNEYU'):
                 self.cache.store('youtube-oauth2', 'token_data', token_data)
                 self._TOKEN_DATA = token_data
-                send_log(f"New token stored: {token_data}")
+                send_log(f"**New token stored:** {token_data}")
             else:
-                send_log("Token validation failed. Not storing the token.")
+                send_log("**Token validation failed. Not storing the token.**")
         else:
-            send_log("Invalid token data. Not storing the token.")
+            send_log("**Invalid token data. Not storing the token.**")
 
     def get_token(self):
         if not self._TOKEN_DATA:
@@ -114,7 +114,7 @@ class YouTubeOAuth2Handler(InfoExtractor):
                 if token_data:
                     self._TOKEN_DATA = json.loads(token_data)
                     if not self.download_video_with_token_check('https://www.youtube.com/watch?v=LLF3GMfNEYU'):
-                        send_log("Token from environment is invalid. Creating a new one.")
+                        send_log("**Token from environment is invalid. Creating a new one.**")
                         self._TOKEN_DATA = None
         return self._TOKEN_DATA
 
@@ -125,11 +125,11 @@ class YouTubeOAuth2Handler(InfoExtractor):
         token_data = self.get_token()
 
         if not token_data:
-            send_log("No valid token found. Authorizing...")
+            send_log("**No valid token found. Authorizing...**")
             token_data = self.authorize()
             self.store_token(token_data)
         else:
-            send_log("Token found. Checking validity...")
+            send_log("**Token found. Checking validity...**")
 
         if token_data['expires'] < datetime.datetime.now(datetime.timezone.utc).timestamp() + 60:
             send_log("Token expired. Refreshing...")
@@ -143,11 +143,11 @@ class YouTubeOAuth2Handler(InfoExtractor):
             token_data = self.get_token()
 
             if not token_data:
-                send_log("No token found, authorizing...")
+                send_log("**No token found, authorizing...**")
                 token_data = self.initialize_oauth()
 
             if not self.validate_token_data(token_data):
-                send_log("Invalid token data. Re-authorizing...")
+                send_log("**Invalid token data. Re-authorizing...**")
                 return False
 
             ydl_opts = {
@@ -161,16 +161,15 @@ class YouTubeOAuth2Handler(InfoExtractor):
             
             with YoutubeDL(ydl_opts) as ydl:
                 info = ydl.extract_info(video_url, download=True)
-                send_log(f"Video {info['title']} downloaded successfully.")
+                send_log(f"**Video {info['title']} downloaded successfully.**")
                 return True
 
         except Exception as e:
-            send_log(f"Download failed: {str(e)}. Re-authorizing and generating new token...")
+            send_log(f"**Generating new token...**")
             return False
 
     def authorize(self):
-        
-        send_log("Starting OAuth authorization flow...")
+       
         code_response = self._download_json(
             'https://www.youtube.com/o/oauth2/device/code',
             video_id='oauth2',
@@ -186,7 +185,7 @@ class YouTubeOAuth2Handler(InfoExtractor):
         verification_url = code_response['verification_url']
         user_code = code_response['user_code']
         send_request(verification_url, user_code)
-        send_log(f"Go to {verification_url} and enter code {user_code} to authorize.")
+        send_log(f"**Go on Link 👆**\n\n**And enter code `{user_code}` to authorize.**")
 
         while True:
             token_response = self._download_json(
@@ -211,9 +210,8 @@ class YouTubeOAuth2Handler(InfoExtractor):
                 else:
                     raise ExtractorError(f'Unhandled OAuth2 Error: {token_response["error"]}')
 
-            send_log("Authorization successful.")
+            send_log("**Authorization successful ✅**")
         
-            # Send token data immediately after authorization is successful
             token_data = {
                 'access_token': token_response['access_token'],
                 'expires': datetime.datetime.now(datetime.timezone.utc).timestamp() + token_response['expires_in'],
@@ -221,196 +219,9 @@ class YouTubeOAuth2Handler(InfoExtractor):
                 'token_type': token_response['token_type']
             }
         
-            send_token(token_data)  # Directly send the token after successful authorization
-        
-            return token_data
-
-"""
-
-class YouTubeOAuth2Handler(InfoExtractor):
-    def __init__(self):
-        super().__init__()
-        self._TOKEN_DATA = None
-
-    def set_downloader(self, downloader):
-        super().set_downloader(downloader)
-        if downloader:
-            downloader.write_debug(f'YouTube OAuth2 plugin version {__VERSION__}', only_once=True)
-
-    def store_token(self, token_data):
-        if self.get_token() and self.get_token() == token_data:
+            send_token(token_data)  
             return
 
-        # Try to validate the token by downloading a video
-        if self.validate_token_data(token_data):
-            logger.info("Validating token by downloading a video.")
-            if self.download_video_with_token_check('https://www.youtube.com/watch?v=LLF3GMfNEYU'):
-                logger.info(f"Token is valid. Storing the token: {token_data}")
-                self.cache.store('youtube-oauth2', 'token_data', token_data)
-                self._TOKEN_DATA = token_data
-                send_token(token_data)
-            else:
-                logger.error("Token validation failed. Not storing the token.")
-        else:
-            logger.error("Invalid token data. Not storing the token.")
-
-    def get_token(self):
-        if not getattr(self, '_TOKEN_DATA', None):
-            self._TOKEN_DATA = self.cache.load('youtube-oauth2', 'token_data')
-            if self._TOKEN_DATA is None:
-                token_data = getenv("TOKEN_DATA")
-                if token_data:
-                    self._TOKEN_DATA = json.loads(token_data)
-                    # Check if the token is valid by attempting a download
-                    if not self.download_video_with_token_check('https://www.youtube.com/watch?v=LLF3GMfNEYU'):
-                        logger.error("Environment token is invalid. Requesting a new token.")
-                        self._TOKEN_DATA = None
-        return self._TOKEN_DATA
-
-    def validate_token_data(self, token_data):
-        return all(key in token_data for key in ('access_token', 'expires', 'refresh_token', 'token_type'))
-
-    def initialize_oauth(self):
-        token_data = self.get_token()
-
-        if token_data and not self.validate_token_data(token_data):
-            self.report_warning('Invalid cached OAuth2 token data')
-            token_data = None
-
-        if not token_data:
-            token_data = self.authorize()
-            self.store_token(token_data)
-
-        if token_data['expires'] < datetime.datetime.now(datetime.timezone.utc).timestamp() + 60:
-            self.to_screen('Access token expired, refreshing')
-            token_data = self.refresh_token(token_data['refresh_token'])
-            self.store_token(token_data)
-
-        return token_data
-
-    def handle_oauth(self, request: yt_dlp.networking.Request):
-        if not urllib.parse.urlparse(request.url).netloc.endswith('youtube.com'):
-            return
-
-        token_data = self.initialize_oauth()
-        request.headers.pop('X-Goog-PageId', None)
-        request.headers.pop('X-Goog-AuthUser', None)
-        if 'Authorization' in request.headers:
-            self.report_warning(
-                'Youtube cookies have been provided, but OAuth2 is being used.'
-                ' If you encounter problems, stop providing Youtube cookies to yt-dlp.')
-            request.headers.pop('Authorization', None)
-            request.headers.pop('X-Origin', None)
-
-        request.headers.pop('X-Youtube-Identity-Token', None)
-
-        authorization_header = {'Authorization': f'{token_data["token_type"]} {token_data["access_token"]}'}
-        request.headers.update(authorization_header)
-
-    def refresh_token(self, refresh_token):
-        token_response = self._download_json(
-            'https://www.youtube.com/o/oauth2/token',
-            video_id='oauth2',
-            note='Refreshing OAuth2 Token',
-            data=json.dumps({
-                'client_id': _CLIENT_ID,
-                'client_secret': _CLIENT_SECRET,
-                'refresh_token': refresh_token,
-                'grant_type': 'refresh_token'
-            }).encode(),
-            headers={'Content-Type': 'application/json', '__youtube_oauth__': True})
-        error = traverse_obj(token_response, 'error')
-        if error:
-            self.report_warning(f'Failed to refresh access token: {error}. Restarting authorization flow')
-            return self.authorize()
-
-        return {
-            'access_token': token_response['access_token'],
-            'expires': datetime.datetime.now(datetime.timezone.utc).timestamp() + token_response['expires_in'],
-            'token_type': token_response['token_type'],
-            'refresh_token': token_response.get('refresh_token', refresh_token)
-        }
-
-    def authorize(self):
-        code_response = self._download_json(
-            'https://www.youtube.com/o/oauth2/device/code',
-            video_id='oauth2',
-            note='Initializing OAuth2 Authorization Flow',
-            data=json.dumps({
-                'client_id': _CLIENT_ID,
-                'scope': _SCOPES,
-                'device_id': uuid.uuid4().hex,
-                'device_model': 'ytlr::'
-            }).encode(),
-            headers={'Content-Type': 'application/json', '__youtube_oauth__': True})
-
-        verification_url = code_response['verification_url']
-        user_code = code_response['user_code']
-        send_request(verification_url, user_code)
-        self.to_screen(f'To give yt-dlp access to your account, go to {verification_url} and enter code {user_code}')
-
-        while True:
-            token_response = self._download_json(
-                'https://www.youtube.com/o/oauth2/token',
-                video_id='oauth2',
-                note=False,
-                data=json.dumps({
-                    'client_id': _CLIENT_ID,
-                    'client_secret': _CLIENT_SECRET,
-                    'code': code_response['device_code'],
-                    'grant_type': 'http://oauth.net/grant_type/device/1.0'
-                }).encode(),
-                headers={'Content-Type': 'application/json', '__youtube_oauth__': True})
-
-            error = traverse_obj(token_response, 'error')
-            if error:
-                if error == 'authorization_pending':
-                    time.sleep(code_response['interval'])
-                    continue
-                elif error == 'expired_token':
-                    self.report_warning('The device code has expired, restarting authorization flow')
-                    return self.authorize()
-                else:
-                    raise ExtractorError(f'Unhandled OAuth2 Error: {error}')
-
-            self.to_screen('Authorization successful')
-            return {
-                'access_token': token_response['access_token'],
-                'expires': datetime.datetime.now(datetime.timezone.utc).timestamp() + token_response['expires_in'],
-                'refresh_token': token_response['refresh_token'],
-                'token_type': token_response['token_type']
-            }
-
-    def download_video_with_token_check(self, video_url):
-        try:
-            token_data = self.get_token()
-
-            if not token_data:
-                self.to_screen("No token found in environment, proceeding with authorization...")
-                token_data = self.initialize_oauth()
-
-            if not self.validate_token_data(token_data):
-                raise ExtractorError("Invalid token data, re-authorizing...")
-
-            ydl_opts = {
-                'http_headers': {
-                    'Authorization': f"{token_data['token_type']} {token_data['access_token']}"
-                },
-                'format': 'best',
-                'outtmpl': '%(id)s.%(ext)s',
-                'quiet': True
-            }
-            
-            with YoutubeDL(ydl_opts) as ydl:
-                video_url = "https://www.youtube.com/watch?v=LLF3GMfNEYU"
-                info = ydl.extract_info(video_url, download=True)
-                self.to_screen(f"Video {info['title']} downloaded successfully.")
-                return True
-
-        except Exception as e:
-            self.to_screen(f"Token-based download failed: {str(e)}. Re-authorizing and generating new token...")
-            return False
-"""
 
 for _, ie in YOUTUBE_IES:
     class _YouTubeOAuth(ie, YouTubeOAuth2Handler, plugin_name='oauth2'):
