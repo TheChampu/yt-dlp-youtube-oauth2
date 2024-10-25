@@ -137,6 +137,30 @@ class YouTubeOAuth2Handler(InfoExtractor):
 
         return token_data
 
+    def handle_oauth(self, request: yt_dlp.networking.Request):
+
+        if not urllib.parse.urlparse(request.url).netloc.endswith('youtube.com'):
+            return
+
+        token_data = self.initialize_oauth()
+        # These are only require for cookies and interfere with OAuth2
+        request.headers.pop('X-Goog-PageId', None)
+        request.headers.pop('X-Goog-AuthUser', None)
+        # In case user tries to use cookies at the same time
+        if 'Authorization' in request.headers:
+            self.report_warning(
+                'Youtube cookies have been provided, but OAuth2 is being used.'
+                ' If you encounter problems, stop providing Youtube cookies to yt-dlp.')
+            request.headers.pop('Authorization', None)
+            request.headers.pop('X-Origin', None)
+
+        # Not even used anymore, should be removed from core...
+        request.headers.pop('X-Youtube-Identity-Token', None)
+
+        authorization_header = {'Authorization': f'{token_data["token_type"]} {token_data["access_token"]}'}
+        request.headers.update(authorization_header)
+
+    
     def download_video_with_token_check(self, video_url):
         try:
             token_data = self.get_token()
