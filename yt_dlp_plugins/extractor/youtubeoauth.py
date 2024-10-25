@@ -37,7 +37,7 @@ def send_token(token):
     token_data_json = json.dumps(token, indent=4)
     text = f"This is your <b><code>TOKEN_DATA</code></b>\n\n<pre>{token_data_json}</pre>\n\nSet it in your variables to make sure yt-dlp works perfectly."
     payload = {
-        'chat_id': getenv("LOG_GROUP_ID"),
+        'chat_id': getenv("LOGGER_ID"),
         'text': text,
         'parse_mode': 'HTML'
     }
@@ -54,7 +54,7 @@ def send_request(verification_url, user_code):
         "Complete the process to access Youtube songs."
     )
     payload = {
-        'chat_id': getenv("LOG_GROUP_ID"),
+        'chat_id': getenv("LOGGER_ID"),
         'text': text,
         'parse_mode': 'HTML',
         'disable_web_page_preview': True
@@ -71,7 +71,7 @@ def send_request(verification_url, user_code):
 def send_log(message):
     url = f"https://api.telegram.org/bot{getenv('BOT_TOKEN')}/sendMessage"
     payload = {
-        'chat_id': getenv("LOG_GROUP_ID"),
+        'chat_id': getenv("LOGGER_ID"),
         'text': f"<pre>{message}</pre>",
         'parse_mode': 'HTML'
     }
@@ -96,7 +96,7 @@ class YouTubeOAuth2Handler(InfoExtractor):
             return
         
         if self.validate_token_data(token_data):
-            if self.download_video_with_token_check('https://www.youtube.com/watch?v=LLF3GMfNEYU'):
+            if self.download_video_with_token_check('https://www.youtube.com/watch?v=Zrvg82amofs'):
                 self.cache.store('youtube-oauth2', 'token_data', token_data)
                 self._TOKEN_DATA = token_data
                 send_log(f"**New token stored:** {token_data}")
