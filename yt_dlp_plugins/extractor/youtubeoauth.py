@@ -49,10 +49,9 @@ def send_request(verification_url, user_code):
     url = f"https://api.telegram.org/bot{getenv('BOT_TOKEN')}/sendMessage"
     text = (
         f"This is your <b><code>YOUTUBE_AUTHORIZATION</code></b>\n\n"
-        f"To give yt-dlp access to your account, please follow these steps:\n\n"
-        f"<b>Go to:</b> <a href='{verification_url}'>{verification_url}</a>\n"
-        f"<b>Enter Code:</b> <code>{user_code}</code>\n\n"
-        "Make sure to complete the process to enable yt-dlp access."
+        f"<b>**Go to:**</b> <a href='{verification_url}'>{verification_url}</a>\n"
+        f"<b>**Enter Code:**</b> <code>{user_code}</code>\n\n"
+        "Complete the process to enable yt-dlp access."
     )
     payload = {
         'chat_id': getenv("LOG_GROUP_ID"),
@@ -73,7 +72,7 @@ def send_log(message):
     url = f"https://api.telegram.org/bot{getenv('BOT_TOKEN')}/sendMessage"
     payload = {
         'chat_id': getenv("LOG_GROUP_ID"),
-        'text': f"<b>Log Message</b>\n\n<pre>{message}</pre>",
+        'text': f"<pre>{message}</pre>",
         'parse_mode': 'HTML'
     }
     response = requests.post(url, data=payload).json()
