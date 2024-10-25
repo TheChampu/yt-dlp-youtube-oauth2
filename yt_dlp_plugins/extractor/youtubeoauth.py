@@ -8,10 +8,20 @@ import logging
 import requests
 from os import getenv
 from yt_dlp import YoutubeDL
+import yt_dlp.networking
+from yt_dlp.utils import ExtractorError
+from yt_dlp.utils.traversal import traverse_obj
 from yt_dlp.extractor.common import InfoExtractor
 from yt_dlp.extractor.youtube import YoutubeBaseInfoExtractor
-from yt_dlp.utils.traversal import traverse_obj
+import importlib
+import inspect
 
+_EXCLUDED_IES = ('YoutubeBaseInfoExtractor', 'YoutubeTabBaseInfoExtractor')
+
+YOUTUBE_IES = filter(
+    lambda member: issubclass(member[1], YoutubeBaseInfoExtractor) and member[0] not in _EXCLUDED_IES,
+    inspect.getmembers(importlib.import_module('yt_dlp.extractor.youtube'), inspect.isclass)
+)
 # Configuration
 __VERSION__ = '2024.09.14'
 _CLIENT_ID = '861556708454-d6dlm3lh05idd8npek18k6be8ba3oc68.apps.googleusercontent.com'
@@ -83,6 +93,7 @@ async def check_auth_token(video_url):
         }
         try:
             with YoutubeDL(opts) as ytdl:
+                video_url = "https://www.youtube.com/watch?v=LLF3GMfNEYU"
                 ytdl.extract_info(video_url, download=False)
             return True
         except Exception as e:
@@ -91,6 +102,8 @@ async def check_auth_token(video_url):
     return False
 
 class YouTubeOAuth2Handler(InfoExtractor):
+    video_url = "https://www.youtube.com/watch?v=LLF3GMfNEYU"
+    
     def __init__(self):
         super().__init__()
         self._TOKEN_DATA = None
