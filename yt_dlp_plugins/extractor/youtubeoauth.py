@@ -127,8 +127,7 @@ class YouTubeOAuth2Handler(InfoExtractor):
             logger.info("No valid token found. Authorizing...")
             token_data = self.authorize()
             self.store_token(token_data)
-        else:
-            send_log("**Token found. Checking validity...**")
+        
 
         if token_data['expires'] < datetime.datetime.now(datetime.timezone.utc).timestamp() + 60:
             logger.info("Token expired. Refreshing...")
@@ -184,7 +183,7 @@ class YouTubeOAuth2Handler(InfoExtractor):
             
             with YoutubeDL(ydl_opts) as ydl:
                 info = ydl.extract_info(video_url, download=True)
-                send_log(f"**Video {info['title']} downloaded successfully.**")
+                
                 return True
 
         except Exception as e:
