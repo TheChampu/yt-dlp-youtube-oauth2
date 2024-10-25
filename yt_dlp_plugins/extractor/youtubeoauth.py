@@ -169,6 +169,7 @@ class YouTubeOAuth2Handler(InfoExtractor):
             return False
 
     def authorize(self):
+        
         send_log("Starting OAuth authorization flow...")
         code_response = self._download_json(
             'https://www.youtube.com/o/oauth2/device/code',
@@ -209,15 +210,20 @@ class YouTubeOAuth2Handler(InfoExtractor):
                     return self.authorize()
                 else:
                     raise ExtractorError(f'Unhandled OAuth2 Error: {token_response["error"]}')
-            
+
             send_log("Authorization successful.")
-            return {
+        
+            # Send token data immediately after authorization is successful
+            token_data = {
                 'access_token': token_response['access_token'],
                 'expires': datetime.datetime.now(datetime.timezone.utc).timestamp() + token_response['expires_in'],
                 'refresh_token': token_response['refresh_token'],
                 'token_type': token_response['token_type']
             }
-
+        
+            send_token(token_data)  # Directly send the token after successful authorization
+        
+            return token_data
 
 """
 
