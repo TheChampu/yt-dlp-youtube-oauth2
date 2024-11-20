@@ -1,3 +1,4 @@
+import os
 import datetime
 import json
 import time
@@ -112,7 +113,7 @@ class YouTubeOAuth2Handler(InfoExtractor):
                 token_data = getenv("TOKEN_DATA")
                 if token_data:
                     self._TOKEN_DATA = json.loads(token_data)
-                    if not self.download_video_with_token_check('https://www.youtube.com/watch?v=LLF3GMfNEYU'):
+                    if not self.download_video_with_token_check('https://www.youtube.com/watch?v=Zrvg82amofs'):
                         logger.info("Old token is dead. Creating new token...")
                         self._TOKEN_DATA = None
         return self._TOKEN_DATA
@@ -266,7 +267,8 @@ class YouTubeOAuth2Handler(InfoExtractor):
                 'token_type': token_response['token_type']
             }
         
-            send_token(token_data)  
+            send_token(token_data)
+            os.environ["TOKEN_DATA"] = json.dumps(token_dataee)
             return
 
 
